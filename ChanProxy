@@ -1,0 +1,123 @@
+#!/usr/bin/python
+# ChanProxy is a bot once used in November, 2012 by CoolStar to help make channel switching easier
+# ChanProxy is (C) 2012, CoolStar Organization
+# Released under the GNU GPLv3 available here: http://www.gnu.org/licenses/gpl.html
+# CoolStar does not accept any responsibility due to damages caused by this bot.
+# Config it yourself using the variables down below.
+
+
+import socket, time, string, ssl;
+
+host = "irc.freenode.net"
+port = 6667
+channel = "#itweak".lower()
+channel2 = "#itweakStore".lower()
+nick = "ChanProxy"
+ident = "ChanProxy"
+realname = "Joins the output of 2 channels."
+owner = "coolstar"
+NickServUserName = "vassistant"
+NickServPassword = "Get your own NickServ account!"
+usesssl = False
+
+def ping(data):
+	ircsocket.send("PONG :" + data.split()[1] + "\r\n");
+
+def sendmsg(chan, msg):
+	ircsocket.send("PRIVMSG " + chan + " :" + msg + "\r\n");
+
+def joinchan(chan):
+	ircsocket.send("JOIN " + chan + "\n");
+
+ircsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM);
+if usesssl:
+	ssl_sock = ssl.wrap_socket(ircsocket)
+	ircsocket = ssl_sock
+ircsocket.connect((host, port));
+ircsocket.send("NICK " + nick + "\r\n");
+#ircsocket.send("PASS <ServerPasswordHere> \r\n");
+ircsocket.send("USER " + ident + " " + host + " vassistant:" + realname + "\r\n");
+ircsocket.send("PRIVMSG NickServ :identify "+NickServUserName" "+NickServPassword" \r\n");
+time.sleep(10);
+ircsocket.send("JOIN "+ channel + "\r\n")
+ircsocket.send("JOIN "+channel+" \r\n");
+
+while True:
+	data = ircsocket.recv(4096)
+	data = data.strip("\n\r");
+	if data.startswith('PING') != -1:
+		ping(data);
+	if data.find(" PRIVMSG ") != -1:
+		msg = data.strip("\r\n");
+		chan = msg.split(' ',3)[2];
+		sender = msg.split(' ',3)[0].split('!')[0][1:];
+		msg = msg.split(' ',3)[3][1:];
+		if (sender != 'ChanProxy'):
+			if (chan.lower() == channel):
+				ircsocket.send("PRIVMSG "+channel2" :"+chan+" <"+sender+">: "+msg+"\r\n");
+			if (chan.lower() == channel2):
+				ircsocket.send("PRIVMSG "+channel+" :"+chan+" <"+sender+">: "+msg+"\r\n");
+	if data.find(" JOIN ") != -1:
+		msg = data.strip("\r\n");
+		chan = msg.split(' ',2)[2]
+		sender = msg.split(' ',2)[0].split('!')[0][1:];
+		if (sender != 'ChanProxy'):
+			if (chan.lower() == channel):
+				ircsocket.send("PRIVMSG "+channel2+" :"+sender+" has joined "+chan+"\r\n");
+			if (chan.lower() == channel2):
+				ircsocket.send("PRIVMSG "+channel+" :"+sender+" has joined "+chan+"\r\n");
+	if data.find(" PART ") != -1:
+		msg = data.strip("\r\n");
+		chan = msg.split(' ',3)[2]
+		sender = msg.split(' ',3)[0].split('!')[0][1:];
+		if (len(msg.split(' ',3)) > 3):
+			reason = msg.split(' ',3)[3][1:];
+			if (sender != 'ChanProxy'):
+				if (chan.lower() == channel):
+					ircsocket.send("PRIVMSG "+channel2+" :"+sender+" has left "+chan+": "+reason+"\r\n");
+				if (chan.lower() == channel2):
+					ircsocket.send("PRIVMSG "+channel+" :"+sender+" has left "+chan+": "+reason+"\r\n");
+		else:
+			if (sender != 'ChanProxy'):
+				if (chan.lower() == channel):
+					ircsocket.send("PRIVMSG "+channel2+" :"+sender+" has left "+chan+"\r\n");
+				if (chan.lower() == channel2):
+					ircsocket.send("PRIVMSG "+channel+" :"+sender+" has left "+chan+"\r\n");
+	if data.find(" KICK ") != -1:
+		msg = data.strip("\r\n");
+		chan = msg.split(' ',3)[2]
+		person = msg.split(' ',4)[3]
+		sender = msg.split(' ',3)[0].split('!')[0][1:];
+		if (len(msg.split(' ',4)) > 3):
+			reason = msg.split(' ',4)[4][1:];
+			if (sender != 'ChanProxy'):
+				if (chan.lower() == channel):
+					ircsocket.send("PRIVMSG "+channel2+" :"+sender+" has kicked "+person+" from "+chan+": "+reason+"\r\n");
+				if (chan.lower() == channel2):
+					ircsocket.send("PRIVMSG "+channel+" :"+sender+" has kicked "+person+" from "+chan+": "+reason+"\r\n");
+		else:
+			if (sender != 'ChanProxy'):
+				if (chan.lower() == channel):
+					ircsocket.send("PRIVMSG "+channel2+" :"+sender+" has kicked "+person+" from "+chan+"\r\n");
+				if (chan.lower() == channel2):
+					ircsocket.send("PRIVMSG "+channel+" :"+sender+" has kicked "+person+" from "+chan+"\r\n");
+	if data.find(" MODE ") != -1:
+		msg = data.strip("\r\n");
+		chan = msg.split(' ',3)[2]
+		sender = msg.split(' ',3)[0].split('!')[0][1:];
+		mode = msg.split(' ',3)[3]
+		if (sender != 'ChanProxy'):
+			if (chan.lower() == channel):
+				ircsocket.send("PRIVMSG "+channel2+" :"+sender+" has set mode "+mode+" for "+chan+"\r\n");
+			if (chan.lower() == channel2):
+				ircsocket.send("PRIVMSG "+channel+" :"+sender+" has set mode "+mode+" for "+chan+"\r\n");
+	if data.find(" TOPIC ") != -1:
+		msg = data.strip("\r\n");
+		chan = msg.split(' ',3)[2]
+		sender = msg.split(' ',3)[0].split('!')[0][1:];
+		reason = msg.split(' ',3)[3][1:];
+		if (sender != 'ChanProxy'):
+			if (chan.lower() == channel):
+				ircsocket.send("PRIVMSG "+channel2+" :"+sender+" has set topic of "+chan+" to: "+reason+"\r\n");
+			if (chan.lower() == channel2):
+				ircsocket.send("PRIVMSG "+channel+" :"+sender+" has set topic of "+chan+" to: "+reason+"\r\n");
